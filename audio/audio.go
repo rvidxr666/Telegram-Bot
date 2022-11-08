@@ -31,7 +31,7 @@ func getLink(voice *tgbotapi.Voice) string {
 	return link
 }
 
-func makeRequest(link string) {
+func downloadImage(link string) *bytes.Buffer {
 	res, err := http.Get(link)
 
 	if err != nil {
@@ -41,8 +41,12 @@ func makeRequest(link string) {
 	data, _ := ioutil.ReadAll(res.Body)
 	buffer := bytes.NewBuffer(data)
 
+	return buffer
+}
+
+func sendImageToIBM(buf *bytes.Buffer) *http.Response {
 	client := http.Client{}
-	req, err := http.NewRequest("POST", url+"/v1/recognize", buffer)
+	req, err := http.NewRequest("POST", url+"/v1/recognize", buf)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -53,44 +57,33 @@ func makeRequest(link string) {
 
 	req.Header.Set("Authorization", "Basic "+auth_header)
 	req.Header.Set("Content-Type", "audio/ogg")
-	res, err = client.Do(req)
+
+	res, err := client.Do(req)
 
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	return res
+}
+
+func parseResponse(res *http.Response) string {
 	resultMap := make(map[string]interface{})
-	data, _ = ioutil.ReadAll(res.Body)
+	data, _ := ioutil.ReadAll(res.Body)
 	json.Unmarshal(data, &resultMap)
 
-	fmt.Println(resultMap["results"].([]interface{})[0].(map[string]interface{})["alternatives"].([]interface{})[0].(map[string]interface{})["transcript"])
+	if len(resultMap["results"].([]interface{})) == 0 {
+		return "None"
+	}
+
+	text := resultMap["results"].([]interface{})[0].(map[string]interface{})["alternatives"].([]interface{})[0].(map[string]interface{})["transcript"]
+	return text.(string)
 }
 
-func downloadFile(voice *tgbotapi.Voice) {
+func GetText(voice *tgbotapi.Voice) string {
 	link := getLink(voice)
-	makeRequest(link)
-	// res, err := http.Get(link)
-
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-
-	// // reqMap := make(map[string]interface{})
-	// data, _ := ioutil.ReadAll(res.Body)
-	// buffer := bytes.NewBuffer(data)
-
-	// client := http.Client{}
-	// req, _ := http.NewRequest("POST", url+"/v1/recognize", buffer)
-	// req.Header.Set("Authorization", "Bearer "+os.Getenv("IBMWatsonKety"))
-	// req.Header.Set("Content-Type", "audio/flac")
-	// res, err = client.Do(req)
-	// fmt.Println(bytes.NewBuffer(data))
-}
-
-func GetText(voice *tgbotapi.Voice) {
-	downloadFile(voice)
-	// fileID := voice.FileID
-	// FileUniqueID := voice.FileUniqueID
-	// fileObject := tgbotapi.File{FileID: fileID, FileUniqueID: FileUniqueID}
-	// fmt.Println("LINK LINK LINK: ", fileObject.Link(token))
+	buf := downloadImage(link)
+	res := sendImageToIBM(buf)
+	text := parseResponse(res)
+	return text
 }
