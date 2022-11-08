@@ -2,7 +2,7 @@
 
 ## Features
 - Displays weather basing on the user's coordinates
-- Integrates with IBM Watson's API to translate Speech in the voice message to text
+- Integrates with IBM Watson's API to translate speech in voice messages to text
 
 Maybe will be deployed on Heroku
 
