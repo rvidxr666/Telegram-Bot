@@ -38,8 +38,8 @@ func landingTable(ID int64) tgbotapi.MessageConfig {
 }
 
 func landingPage(ID int64) {
-	initalMsg := initialMessage(ID)
-	bot.Send(initalMsg)
+	// initalMsg := initialMessage(ID)
+	// bot.Send(initalMsg)
 	tableMsg := landingTable(ID)
 	bot.Send(tableMsg)
 }
@@ -71,6 +71,12 @@ func checkVoice(ID int64) {
 	bot.Send(msg)
 }
 
+func voiceResponse(messaage string, ID int64) {
+	msg := tgbotapi.NewMessage(ID, "Voice Message: "+messaage)
+	bot.Send(msg)
+	landingPage(ID)
+}
+
 func main() {
 	if err != nil {
 		log.Panic(err)
@@ -90,9 +96,7 @@ func main() {
 		}
 
 		id := update.Message.Chat.ID
-		// if update.Message.Text == "/start" {
-		// 	landingPage(bot, id)
-		// }
+
 		fmt.Println("Printed message", update.Message.Location)
 		switch update.Message.Text {
 		case "/start":
@@ -112,22 +116,11 @@ func main() {
 		// Start of audio logic
 		voice := update.Message.Voice
 		fmt.Println("Voice", voice)
-		// fmt.Println("Duration", voice.Duration)
+
 		if voice != nil && voice.Duration <= 60 {
 			fmt.Println("Inside")
-			audio.GetText(voice)
+			text := audio.GetText(voice)
+			voiceResponse(text, id)
 		}
-
-		// msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello! Please provide your location!")
-		// btn := tgbotapi.KeyboardButton{
-		// 	Text:            "Share Location",
-		// 	RequestLocation: true,
-		// }
-
-		// keyboard := tgbotapi.NewReplyKeyboard([]tgbotapi.KeyboardButton{btn})
-
-		// msg.ReplyToMessageID = update.Message.MessageID
-
-		// bot.Send(msg)
 	}
 }
